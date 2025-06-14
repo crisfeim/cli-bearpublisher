@@ -5,10 +5,14 @@ import Foundation
 public struct BearSiteGenerator: @unchecked Sendable {
     let site: BearRenderedSite
     let outputURL: URL
+    let filesFolderURL: URL
+    let imagesFolderURL: URL
     
-    public init(site: BearRenderedSite, outputURL: URL) {
+    public init(site: BearRenderedSite, outputURL: URL, filesFolderURL: URL, imagesFolderURL: URL) {
         self.site = site
         self.outputURL = outputURL
+        self.filesFolderURL = filesFolderURL
+        self.imagesFolderURL = imagesFolderURL
     }
     
     private func cleanOutputFolder() {
@@ -22,8 +26,14 @@ public struct BearSiteGenerator: @unchecked Sendable {
          async let writeCategoryLists: () = write(site.listsByCategory)
          async let writeHashtagLists: () = write(site.listsByTag)
          async let writeAssets: () = write(site.assets)
-        
-        _ = try await [writeIndex, writeNotes, writeCategoryLists, writeHashtagLists, writeAssets]
+         async let writeMedia: () = copyMedia()
+         
+        _ = try await [writeIndex, writeNotes, writeCategoryLists, writeHashtagLists, writeAssets, writeMedia]
+    }
+    
+    private func copyMedia() throws {
+        try FileManager.default.copyItem(at: filesFolderURL, to: outputURL.appendingPathComponent("files"))
+        try FileManager.default.copyItem(at: imagesFolderURL, to: outputURL.appendingPathComponent("images"))
     }
     
     private func write(_ resources: [Resource]) throws {

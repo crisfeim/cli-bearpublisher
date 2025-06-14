@@ -35,11 +35,23 @@ class BearSiteWriterTests: XCTestCase {
             listsByTag: listsByTag,
             assets: assets
         )
+
+        let filesFolder = testSpecificURL().appendingPathComponent("filesFolder")
+        let imagesFolder = testSpecificURL().appendingPathComponent("imagesFolder")
         
-        let sut = BearSiteGenerator(site: site, outputURL: testSpecificURL())
+        try FileManager.default.createDirectory(at: filesFolder, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: imagesFolder, withIntermediateDirectories: true)
+        
+        
+        let sut = BearSiteGenerator(
+            site: site,
+            outputURL: outputFolder(),
+            filesFolderURL: filesFolder,
+            imagesFolderURL: imagesFolder,
+        )
         
         try await sut.execute()
-        
+      
         expectFileAtPathToExist("index.html")
         expectFileAtPathToExist("notes/somenote.html")
         expectFileAtPathToExist("list/somecategorylist.html")
@@ -52,7 +64,7 @@ class BearSiteWriterTests: XCTestCase {
 // Custom expectations
 private extension BearSiteWriterTests {
     func expectFileAtPathToExist(_ path: String, file: StaticString = #filePath, line: UInt = #line) {
-        XCTAssert(FileManager.default.fileExists(atPath: testSpecificURL().appendingPathComponent(path).path))
+        XCTAssert(FileManager.default.fileExists(atPath: outputFolder().appendingPathComponent(path).path))
     }
 }
 
@@ -64,5 +76,9 @@ private extension BearSiteWriterTests {
     
     func testSpecificURL() -> URL {
         cachesDirectory().appendingPathComponent("\(type(of: self))")
+    }
+    
+    func outputFolder() -> URL {
+        testSpecificURL().appendingPathComponent("output")
     }
 }

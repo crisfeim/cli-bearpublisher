@@ -19,6 +19,8 @@ public struct BearPublisher {
         noteRenderer: BearSiteRenderer.NoteRenderer,
         listByCategoryRenderer: BearSiteRenderer.ListRenderer,
         listByTagRenderer: BearSiteRenderer.ListRenderer,
+        filesFolderURL: URL,
+        imagesFolderURL: URL,
         assetsProvider: @escaping () -> [Resource]
     ) throws {
         let builder = BearSiteBuilder(
@@ -39,6 +41,11 @@ public struct BearPublisher {
             assetsProvider: assetsProvider
         )
         
-        execute = BearSiteGenerator(site: renderer.execute(), outputURL: outputURL).execute
+        execute = BearSiteGenerator(
+            site: renderer.execute(),
+            outputURL: outputURL,
+            filesFolderURL: filesFolderURL,
+            imagesFolderURL: imagesFolderURL
+        ).execute
     }
 }

@@ -5,6 +5,14 @@ import BearDomain
 import BearPublish
 
 class BearPublisherTests: XCTestCase {
+    
+    override func setUp() {
+        try? FileManager.default.removeItem(at: testSpecificURL())
+    }
+    
+    override func tearDown() {
+        try? FileManager.default.removeItem(at: testSpecificURL())
+    }
 
     func test_execute_buildsTheExpectedSiteAtOutputURL() async throws {
         struct IndexRenderer: BearSiteRenderer.IndexRenderer {
@@ -31,8 +39,14 @@ class BearPublisherTests: XCTestCase {
             }
         }
         
+        let filesFolder = testSpecificURL().appendingPathComponent("filesFolder")
+        let imagesFolder = testSpecificURL().appendingPathComponent("imagesFolder")
+        
+        try FileManager.default.createDirectory(at: filesFolder, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: imagesFolder, withIntermediateDirectories: true)
+        
         let sut = try BearPublisher(
-            outputURL: testSpecificURL(),
+            outputURL: outputFolder(),
             siteTitle: "Home",
             indexNotesProvider: { [Self.anyNote()] },
             notesProvider: { [Self.anyNote()] },
@@ -43,6 +57,8 @@ class BearPublisherTests: XCTestCase {
             noteRenderer: NoteRenderer(),
             listByCategoryRenderer: ListByCategoryRenderer(),
             listByTagRenderer: ListByTagRenderer(),
+            filesFolderURL: filesFolder,
+            imagesFolderURL: imagesFolder,
             assetsProvider: {
                 [Resource(filename: "css/some.css", contents: "Some css")]
             })
@@ -54,6 +70,8 @@ class BearPublisherTests: XCTestCase {
         expectFileAtPathToExist("list/\(Self.anyNoteList().slug).html")
         expectFileAtPathToExist("tag/\(Self.anyNoteList().slug).html")
         expectFileAtPathToExist("css/some.css")
+        expectFileAtPathToExist("images")
+        expectFileAtPathToExist("files")
     }
 }
 
@@ -61,7 +79,7 @@ class BearPublisherTests: XCTestCase {
 private extension BearPublisherTests {
     #warning("@todo: Assert file contets")
     func expectFileAtPathToExist(_ path: String, file: StaticString = #filePath, line: UInt = #line) {
-        XCTAssert(FileManager.default.fileExists(atPath: testSpecificURL().appendingPathComponent(path).path))
+        XCTAssert(FileManager.default.fileExists(atPath: outputFolder().appendingPathComponent(path).path))
     }
 }
 
@@ -98,5 +116,9 @@ private extension BearPublisherTests {
     
     func testSpecificURL() -> URL {
         cachesDirectory().appendingPathComponent("\(type(of: self))")
+    }
+    
+    func outputFolder() -> URL {
+        testSpecificURL().appendingPathComponent("output")
     }
 }

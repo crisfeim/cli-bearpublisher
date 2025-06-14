@@ -14,14 +14,27 @@ class IntegrationTests: XCTestCase {
         try? FileManager.default.removeItem(at: testSpecificURL())
     }
     
+    private var filesFolder: URL {
+        testSpecificURL().appendingPathComponent("files")
+    }
+    
+    private var imagesFolder: URL {
+        testSpecificURL().appendingPathComponent("images")
+    }
+    
+    
     private var dbPath: String {
         Bundle.module.url(forResource: "database", withExtension: "sqlite")!.path
     }
     
     func test_cli_buildsExpectedFilesAtOutputURL() async throws {
+        try FileManager.default.createDirectory(at: filesFolder, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: imagesFolder, withIntermediateDirectories: true)
         let cli = try BearPublisherCLI.parse([
-            "--input", dbPath,
-            "--output", testSpecificURL().path,
+            "--db-path", dbPath,
+            "--output", outputFolder().path,
+            "--images-folder-path", imagesFolder.path,
+            "--files-folder-path", filesFolder.path,
             "--title", "Test Site"
         ])
         
@@ -30,9 +43,13 @@ class IntegrationTests: XCTestCase {
     }
     
     func test_bearPublisherComposerExecute_buildsExpectedFilesAtOutputURL() async throws {
+        try FileManager.default.createDirectory(at: filesFolder, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: imagesFolder, withIntermediateDirectories: true)
         let sut = try BearPublisherComposer.make(
             dbPath: dbPath,
-            outputURL: testSpecificURL(),
+            outputURL: outputFolder(),
+            filesFolderURL: filesFolder,
+            imagesFolderURL: imagesFolder,
             siteTitle: "any title"
         )
         
@@ -78,7 +95,7 @@ private extension IntegrationTests {
     func expectFileWithHashToExist(parentFolder: String, fileNamePrefix: String, file: StaticString = #filePath, line: UInt = #line) {
         
         do {
-            let directoryURL = testSpecificURL().appendingPathComponent(parentFolder)
+            let directoryURL = outputFolder().appendingPathComponent(parentFolder)
             
             let contents = try FileManager.default.contentsOfDirectory(
                 at: directoryURL,
@@ -96,19 +113,24 @@ private extension IntegrationTests {
     }
     
     func expectFileAtPathToExist(_ path: String, file: StaticString = #filePath, line: UInt = #line) {
-        XCTAssert(FileManager.default.fileExists(atPath: testSpecificURL().appendingPathComponent(path).path))
+        XCTAssert(FileManager.default.fileExists(atPath: outputFolder().appendingPathComponent(path).path))
     }
 }
 
 
 // MARK: - Helpers
 private extension IntegrationTests {
+    
     func cachesDirectory() -> URL {
         return FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
     }
     
     func testSpecificURL() -> URL {
-        cachesDirectory().appendingPathComponent("bearpublisher")
+        cachesDirectory().appendingPathComponent("\(type(of: self))")
+    }
+    
+    func outputFolder() -> URL {
+        testSpecificURL().appendingPathComponent("output")
     }
 }
 
